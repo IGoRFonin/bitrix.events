@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <!-- saved from url=(0075)http://www.medikoo.com/asynchronous-javascript/3d/#/asynchronous-javascript -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Asynchronous JavaScript | meetjs summit 2012 presentation by Mariusz Nowak @medikoo (made with impress.js presentation tool by Bartek Szopka @bartaz) - http://www.medikoo.com/</title>
-<meta name="description" content="Asynchronous JavaScript">
-<meta name="author" content="Mariusz Nowak">
+<title>Битрикс. События</title>
+<meta name="description" content="Битрикс. Собютия">
 
 <link rel="stylesheet" href="./def/font.css">
 <link rel="stylesheet" href="./def/default.css">
@@ -23,166 +22,128 @@
     <p style="text-align:center"><big>Otherwise, scroll down to see the slides</big></p>
   </div>
 
+  <!-- step 1 -->
   <div id="asynchronous-javascript" class="step">
-    <h1>Asynchronous Javascript and XML (AJAX)</h1>
+    <h1>Битрикс. События</h1>
     
   </div>
+
+  <!-- step 2 -->
   <div id="why-asynchronous" class="step">
-    <h2>Почему асинхронный?</h2>
+    <p>Иногда бывает необходимо повлиять на ход выполнения какой-нибудь API функции. Но если ее изменить, то эти изменения будут утеряны при очередном обновлении. Для таких случаев и разработана система событий. В ходе выполнения некоторых API функций, в определённых точках установлены вызовы определённых функций, так называемых обработчиков события.</p>
   </div>
 
+  <!-- step 3 -->
   <div id="client-side" class="step">
-    <h3>Клиентская часть ( когда и как )</h3>
-    <p class="substep">Мне не хотим перезагружать страницу или хотим перенести загрузку контента асинхронно</p>
-    <p class="substep">Программировать очень просто, собрали данные, отправили на сервер когда понадобилось</p>
-  </div>
-
-  <div id="server-side" class="step">
-    <h3>Серверная часть</h3>
-    <p class="substep">Получаем данные</p>
-    <p class="substep">Обрабатываем</p>
-    <p class="substep">Что-то делаем</p>
-    <p class="substep">Возвращаем ответ</p>
-  </div>
-
-  <div id="its-about-external-resources" class="step">
-    <h3>Как выгдядит код на клиенте</h3>
+    <h3>Как работает?</h3>
     <pre>
-    <code>$.ajax({
-        type: "POST",
-        url: "/ajax/get-money.php",
-        data: "money=10000&id=2",
-        success: function(data, textStatus, jqXHR ) {
-          // обрабатываем полученные данные из data
-        }
-    })
-</code>
-</pre>
-  </div>
+    <code>foreach (GetModuleEvents("iblock", "OnIBlockElementAdd", true)
+     as $arEvent) {
+        ExecuteModuleEventEx($arEvent, array($arFields));
+     }
 
-  <div id="how-much-waiting-can-cost" class="step">
-    <h3>Способы сбора данных</h3>
-       <pre>
-      <code>
-  $("form").on('submit', function() {
-    var data = $(this).serialize(); // собираем все данные в строку
-    // или так
-    var data = $(this).serializeArray(); 
-    // собираем все данные в массив, 
-    //удобно если нужно что-то добавить/изменить
-    $.ajax({
-    ...
-    "data":data, // в свойство data кладем переменную data
-    ...
-    })
-  })
+foreach(GetModuleEvents("search", "BeforeIndex", true) 
+     as $arEvent){
+  $arEventResult = ExecuteModuleEventEx($arEvent, array($arFields));
+      if(is_array($arEventResult))
+        $arFields = $arEventResult;
+    }
+    </code>
+    </pre>
+  </div>
+  
+  <!-- step 4 -->
+  <div id="server-side" class="step">
+    <h3>Как найти событие в документации?</h3>
+    <p>
+      <span style="color:orange;">http://dev.1c-bitrix.ru/api_help/:module:/events/</span>
+      <br>
+
+      где :module: - название модуля, может быть: <br>
+      "sale", "iblock", "search", "catalog", "main"...
+    </p>
+  </div>
+  
+
+  <!-- step 5 -->
+  <div id="its-about-external-resources" class="step">
+    <h3>Применение</h3>
+    <p>Добавляем код в init.php</p>
+    <pre>
+      <code>AddEventHandler("iblock", "OnBeforeIBlockElementAdd", 
+      Array("MyClass", "OnBeforeIBlockElementAddHandler"));
+
+class MyClass {
+    function OnBeforeIBlockElementAddHandler(&$arFields) {
+      ...
+    }
+}
+
+-------------------------------------------------------------------
+
+AddEventHandler("iblock", "OnBeforeIBlockElementAdd", 
+      "OnBeforeIBlockElementAddHandler");
+
+function OnBeforeIBlockElementAddHandler(&$arFields) {
+  ...
+}        
       </code>
     </pre>
   </div>
 
-  <div id="better-software-can-multitask" class="step">
-    <h3>Данные на серверной части</h3>
-    <div class="substep">
-      <p>Метод, который мы указывали в "type" будет находиться в переменной</p>
-      <pre><code>$_SERVER['REQUEST_METHOD']</code></pre>
-    </div>
-    <div class="substep">
-      <p style="margin-top:0.9em">Если методы POST или GET данные переданные в data хранятся в глобальных переменных</p>
-      <pre><code>$_REQUEST //для обоих<br>$_GET // для метода GET<br>$_POST // для метода POST</code></pre>
-    </div>
-    <div class="substep">
-      <p style="margin-top:0.9em">Для других методов данные получаем так</p>
-      <pre><code>$request = file_get_contents('php://input');</code></pre>
-    </div>
-  </div>
-
-  <div id="how-io-should-be-done" class="step">
-    <h3>Пример содержания ajax файла</h3 >
-    <div class="substep">
-     <pre><code>
-define("STOP_STATISTICS", true);
-define("PUBLIC_AJAX_MODE", true);
-require_once($_SERVER["DOCUMENT_ROOT"].
-"/bitrix/modules/main/include/prolog_before.php");
-if($_REQUEST['SECTION_ID']) {
-  // code
+  <!-- step 6 -->
+  <div id="how-much-waiting-can-cost" class="step">
+    <h3>Дебажим</h3>
+    <pre>
+      <code>...
+function OnBeforeIBlockElementAddHandler(&$arFields) {
+  file_put_contents($_SERVER["DOCUMENT_ROOT"].'/element_add.txt',
+   print_r(array($arFields),true),FILE_APPEND);
 }
-     </code></pre>
-     <br>
-     <pre><code>define("STOP_STATISTICS", true);
-define("PUBLIC_AJAX_MODE", true);
-require_once($_SERVER["DOCUMENT_ROOT"].
-"/bitrix/modules/main/include/prolog_before.php");
-$APPLICATION->IncludeComponent(
-    "pixelplus:feedback",
-    "subscribe",
-    array(
-        "FIELDS_PREFIX" => "SUBSCRIBE",
-        ...
-    ),
-    false
-  );</code></pre>
-    </div>
+      </code>
+    </pre>
+  </div>
+  
+  <!-- step 7 -->
+  <div id="better-software-can-multitask" class="step">
+    <h3>Пример 1 (рабочий)</h3>
+    <pre>
+      <code>...
+function OnBeforeIBlockElementAddHandler(&$arFields)
+{
+    $code = Cutil::translit($arFields['NAME'], "ru", array());
+    $arFields['CODE'] = preg_replace('/\d/', '', $code);
+}
+      </code>
+    </pre>
   </div>
 
-  <div id="how-to-write-asynchronous-code" class="step">
-    <h3 class="lone">Как отсылать данные?</h3>
-    <pre><code>$arString = "Вася"; <br>echo $arString;
-    //Отсылаем строку, на выходе придет строку, все просто</code></pre>
-    <p>а если хочу отправить массив? jQuery от php получит строку, поэтому мы передаем строку в JSON формате, чтобы потом на клиенте сделать из нее объект</p>
-    <pre><code>echo CUtil::PhpToJSObject($arArray);</code></pre>
-    <p>Примечание: эта функция делает строку с одинарными кавычками, вам нужно будет через str_replace поменять их на двойные и еще возможно добавить в начале и конце строки одинарные</p>
-  </div>
 
-  <div id="nodejs-convention" class="step">
-    <p>Так же можно передавать просто html, jQuery легко его вставит в DOM дерево</p>
-    <pre><code>... <br>//Собрали данные
-&lt;div class="order"&gt;
-  &lt;div class="order_id"&gt;&lt;?=$arOrder['ID'];?&gt;&lt;/div&gt;
-  &lt;div class="order_sum"&gt;&lt;?=$arOrder['SUM'];?&gt;&lt;/div&gt;
-&lt;/div&gt;
-    </code></pre>
-  </div>
-
-  <div id="exercise" class="step">
-    <h3>Получение данные на клиенте</h3>
-    <p>Если данные строка, например символьный код</p>
-    <pre><code>$.ajax({
-    ...
-    success:function(data) {
-      if(data == "our_code") {
-        // делаем то что нам нужно
-      }
-    }
-})</code></pre>
-    <p>Если данные JSON строка</p>
-    <pre><code>$.ajax({
-    ...
-    success:function(data) {
-      var obj = $.parseJSON(data); 
-      // obj будет полноценным объектом, 
-      // могут возникнуть проблемы с передачей JSON
-      // строки с сервера
-    }
-})</code></pre>
-  </div>
-
-  <div id="exercise-nodejs" class="step">
-    <h3>Если данные строка в виде html</h3>
-    <pre><code>$.ajax({
-    ...
-    success:function(data) {
-      $('.news').append(data);
-    }
-})
-    </code></pre>
+  <!-- step 8 -->
+  <div id="how-io-should-be-done" class="step" style="width:1140px">
+    <h3>Пример 2 (рабочий + полезный)</h3>
+    <pre>
+      <code>AddEventHandler("main", "OnEpilog", "Generate404");
+function Generate404() {
+  if(defined('ERROR_404') && ERROR_404=='Y' || CHTTP::GetLastStatus() == "404 Not Found"){
+      GLOBAL $APPLICATION;
+      $APPLICATION->RestartBuffer();
+      require ($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
+      require $_SERVER['DOCUMENT_ROOT'].SITE_TEMPLATE_PATH.'/header.php';
+      require $_SERVER['DOCUMENT_ROOT'].'/404.php';
+      require $_SERVER['DOCUMENT_ROOT'].SITE_TEMPLATE_PATH.'/footer.php';
+  }
+}
+        
+      </code>
+    </pre>
   </div>
 
   <div id="thank-you" class="step final">
     <h2>Спасибо за внимание!</h2>
 
     <p>Исходники</p>
-    <p class="github p-a"><a href="https://github.com/IGoRFonin/seminar.ajax"><img src="./def/github.png"> https://github.com/IGoRFonin/seminar.ajax</a></p>
+    <p class="github p-a"><a href="https://github.com/IGoRFonin/bitrix.events"><img src="./def/github.png"> https://github.com/IGoRFonin/bitrix.events</a></p>
 
 
   </div>
