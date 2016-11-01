@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!-- saved from url=(0075)http://www.medikoo.com/asynchronous-javascript/3d/#/asynchronous-javascript -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Asynchronous JavaScript | meetjs summit 2012 presentation by Mariusz Nowak @medikoo (made with impress.js presentation tool by Bartek Szopka @bartaz) - http://www.medikoo.com/</title>
+<meta name="description" content="Asynchronous JavaScript">
+<meta name="author" content="Mariusz Nowak">
+
+<link rel="stylesheet" href="./def/font.css">
+<link rel="stylesheet" href="./def/default.css">
+<link rel="stylesheet" href="./def/sunburst.css">
+
+</head><body><div id="impress" class="impress-not-supported">
+  <div id="fm1" class="fallback-message hidden">
+    <p>Your browser <b>doesn't support the features required</b> by impress.js,
+      so you are presented with a simplified version of this presentation.</p>
+    <p>For the best experience please use the latest <b>Chrome</b> or
+      <b>Safari</b> browser. Firefox 10 (to be released soon)
+      will also handle it.</p>
+  </div>
+  <div id="fm2" class="fallback-message">
+    <p>If you have fast machine and recent Google Chrome or Safari installed,
+      please check <a href="http://www.medikoo.com/asynchronous-javascript/3d/3d/index.html">a bit more "moving" version of that presentation</a></p>
+    <p style="text-align:center"><big>Otherwise, scroll down to see the slides</big></p>
+  </div>
+
+  <div id="asynchronous-javascript" class="step">
+    <h1>Asynchronous Javascript and XML (AJAX)</h1>
+    
+  </div>
+  <div id="why-asynchronous" class="step">
+    <h2>Почему асинхронный?</h2>
+  </div>
+
+  <div id="client-side" class="step">
+    <h3>Клиентская часть ( когда и как )</h3>
+    <p class="substep">Мне не хотим перезагружать страницу или хотим перенести загрузку контента асинхронно</p>
+    <p class="substep">Программировать очень просто, собрали данные, отправили на сервер когда понадобилось</p>
+  </div>
+
+  <div id="server-side" class="step">
+    <h3>Серверная часть</h3>
+    <p class="substep">Получаем данные</p>
+    <p class="substep">Обрабатываем</p>
+    <p class="substep">Что-то делаем</p>
+    <p class="substep">Возвращаем ответ</p>
+  </div>
+
+  <div id="its-about-external-resources" class="step">
+    <h3>Как выгдядит код на клиенте</h3>
+    <pre>
+    <code>$.ajax({
+        type: "POST",
+        url: "/ajax/get-money.php",
+        data: "money=10000&id=2",
+        success: function(data, textStatus, jqXHR ) {
+          // обрабатываем полученные данные из data
+        }
+    })
+</code>
+</pre>
+  </div>
+
+  <div id="how-much-waiting-can-cost" class="step">
+    <h3>Способы сбора данных</h3>
+       <pre>
+      <code>
+  $("form").on('submit', function() {
+    var data = $(this).serialize(); // собираем все данные в строку
+    // или так
+    var data = $(this).serializeArray(); 
+    // собираем все данные в массив, 
+    //удобно если нужно что-то добавить/изменить
+    $.ajax({
+    ...
+    "data":data, // в свойство data кладем переменную data
+    ...
+    })
+  })
+      </code>
+    </pre>
+  </div>
+
+  <div id="better-software-can-multitask" class="step">
+    <h3>Данные на серверной части</h3>
+    <div class="substep">
+      <p>Метод, который мы указывали в "type" будет находиться в переменной</p>
+      <pre><code>$_SERVER['REQUEST_METHOD']</code></pre>
+    </div>
+    <div class="substep">
+      <p style="margin-top:0.9em">Если методы POST или GET данные переданные в data хранятся в глобальных переменных</p>
+      <pre><code>$_REQUEST //для обоих<br>$_GET // для метода GET<br>$_POST // для метода POST</code></pre>
+    </div>
+    <div class="substep">
+      <p style="margin-top:0.9em">Для других методов данные получаем так</p>
+      <pre><code>$request = file_get_contents('php://input');</code></pre>
+    </div>
+  </div>
+
+  <div id="how-io-should-be-done" class="step">
+    <h3>Пример содержания ajax файла</h3 >
+    <div class="substep">
+     <pre><code>
+define("STOP_STATISTICS", true);
+define("PUBLIC_AJAX_MODE", true);
+require_once($_SERVER["DOCUMENT_ROOT"].
+"/bitrix/modules/main/include/prolog_before.php");
+if($_REQUEST['SECTION_ID']) {
+  // code
+}
+     </code></pre>
+     <br>
+     <pre><code>define("STOP_STATISTICS", true);
+define("PUBLIC_AJAX_MODE", true);
+require_once($_SERVER["DOCUMENT_ROOT"].
+"/bitrix/modules/main/include/prolog_before.php");
+$APPLICATION->IncludeComponent(
+    "pixelplus:feedback",
+    "subscribe",
+    array(
+        "FIELDS_PREFIX" => "SUBSCRIBE",
+        ...
+    ),
+    false
+  );</code></pre>
+    </div>
+  </div>
+
+  <div id="how-to-write-asynchronous-code" class="step">
+    <h3 class="lone">Как отсылать данные?</h3>
+    <pre><code>$arString = "Вася"; <br>echo $arString;
+    //Отсылаем строку, на выходе придет строку, все просто</code></pre>
+    <p>а если хочу отправить массив? jQuery от php получит строку, поэтому мы передаем строку в JSON формате, чтобы потом на клиенте сделать из нее объект</p>
+    <pre><code>echo CUtil::PhpToJSObject($arArray);</code></pre>
+    <p>Примечание: эта функция делает строку с одинарными кавычками, вам нужно будет через str_replace поменять их на двойные и еще возможно добавить в начале и конце строки одинарные</p>
+  </div>
+
+  <div id="nodejs-convention" class="step">
+    <p>Так же можно передавать просто html, jQuery легко его вставит в DOM дерево</p>
+    <pre><code>... <br>//Собрали данные
+&lt;div class="order"&gt;
+  &lt;div class="order_id"&gt;&lt;?=$arOrder['ID'];?&gt;&lt;/div&gt;
+  &lt;div class="order_sum"&gt;&lt;?=$arOrder['SUM'];?&gt;&lt;/div&gt;
+&lt;/div&gt;
+    </code></pre>
+  </div>
+
+  <div id="exercise" class="step">
+    <h3>Получение данные на клиенте</h3>
+    <p>Если данные строка, например символьный код</p>
+    <pre><code>$.ajax({
+    ...
+    success:function(data) {
+      if(data == "our_code") {
+        // делаем то что нам нужно
+      }
+    }
+})</code></pre>
+    <p>Если данные JSON строка</p>
+    <pre><code>$.ajax({
+    ...
+    success:function(data) {
+      var obj = $.parseJSON(data); 
+      // obj будет полноценным объектом, 
+      // могут возникнуть проблемы с передачей JSON
+      // строки с сервера
+    }
+})</code></pre>
+  </div>
+
+  <div id="exercise-nodejs" class="step">
+    <h3>Если данные строка в виде html</h3>
+    <pre><code>$.ajax({
+    ...
+    success:function(data) {
+      $('.news').append(data);
+    }
+})
+    </code></pre>
+  </div>
+
+  <div id="thank-you" class="step final">
+    <h2>Спасибо за внимание!</h2>
+
+    <p>Исходники</p>
+    <p class="github p-a"><a href="https://github.com/IGoRFonin/seminar.ajax"><img src="./def/github.png"> https://github.com/IGoRFonin/seminar.ajax</a></p>
+
+
+  </div>
+
+  <div id="overview" class="step" data-x="3400" data-y="2000" data-scale="10"></div>
+  <div class="hint"><p>Use a spacebar or arrow keys to navigate</p></div>
+</div>
+
+<div id="timer"></div>
+
+<script src="./def/highlight.pack.js"></script>
+<script src="./def/impress.js"></script>
+<script src="./def/default.js"></script>
+
+
+</body><wappalyzerdata id="wappalyzerData" style="display: none"></wappalyzerdata><script id="wappalyzerEnvDetection" src="chrome-extension://gppongmhjkpfnbhagpmjfkannfbllamg/js/inject.js"></script></html>
